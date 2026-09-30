@@ -16,7 +16,6 @@ import requests
 
 BASE = "https://jidelnicek.utb.cz/webkredit/Api/Ordering/ExportMenu"
 CANTEEN_ID = 2            # menza UTB (ověřeno z veřejných exportů)
-MILK_ALLERGEN = "7"       # alergen č. 7 = mléko a výrobky z něj (vč. laktózy)
 TZ = ZoneInfo("Europe/Prague")
 ROOT = Path(__file__).parent
 OUT = ROOT / "site"
@@ -25,11 +24,13 @@ DEBUG = ROOT / "site" / "debug"
 DAY_NAMES = ["pondělí", "úterý", "středa", "čtvrtek", "pátek", "sobota", "neděle"]
 SKIP = re.compile(r"^(Jídelníček|Alt\s+Jídlo\s+Cena|\d{2}\.\d{2}\.\d{4})$", re.I)
 SECTION = re.compile(
-    r"^(?P<name>.+?)\s*-\s*(?:" + "|".join(DAY_NAMES) + r")\s+\d{2}\.\d{2}\.\d{4}", re.I
+    r"^(?P<name>.+?)\s*-\s*(?:" + "|".join(DAY_NAMES) + r")\s+\d{2}\.\d{2}\.\d{4}$", re.I
 )
-# alergeny v závorce na konci, např. "(1,3,7)" nebo "(A: 1, 7)"
-ALLERGENS = re.compile(r"\((?:A(?:lergeny)?\s*:?\s*)?(\d{1,2}(?:\s*[,.]\s*\d{1,2}[a-z]?)*)\)")
-PRICE = re.compile(r"\s+\d+[,.]?\d*\s*(Kč)?$")
+MEAL_START = re.compile(r"^(?:\d+\s+)?\d+\s+(?P<rest>(?:\d+\s*[^\W\d_]|[^\W\d]).*)$")   # "1 Jídlo…" nebo "4 2 Jídlo…"
+PRICE = re.compile(r"\s*\d+[.,]\d{2}\s*Kč")
+ALLERGEN_LINE = re.compile(r"^Alergeny\s*:\s*(?P<rest>.*)$", re.I)
+MILK_WORDS = ("mléko", "laktóz")
+SKIP_SECTIONS = {"obaly"}
 
 
 def week_days(today: dt.date):
@@ -58,32 +59,69 @@ def pdf_text(data: bytes) -> str:
         return "\n".join((p.extract_text() or "") for p in pdf.pages)
 
 
+def split_allergens(text: str):
+    """Rozdělí 'lepek (pšenice, žito), mléko' podle čárek mimo závorky."""
+    parts, depth, buf = [], 0, ""
+    for ch in text:
+        depth += ch == "("
+        depth -= ch == ")"
+        if ch == "," and depth == 0:
+            parts.append(buf.strip()); buf = ""
+        else:
+            buf += ch
+    parts.append(buf.strip())
+    return [p for p in parts if p]
+
+
 def parse(text: str):
-    sections, current = [], None
+    sections, section, meal, mode = [], None, None, None
+
+    def close_meal():
+        nonlocal meal
+        if meal and section is not None:
+            name = re.sub(r"\s+", " ", PRICE.sub(" ", meal["name"])).strip(" ,-–")
+            allergens = split_allergens(meal["al"]) if meal["al"] is not None else []
+            if meal["al"] is None:
+                status = "unknown"
+            elif any(w in a.lower() for a in allergens for w in MILK_WORDS):
+                status = "milk"
+            else:
+                status = "ok"
+            if name:
+                section["meals"].append({"name": name, "allergens": allergens, "status": status})
+        meal = None
+
     for raw in text.splitlines():
         line = raw.strip()
         if not line or SKIP.match(line):
             continue
         m = SECTION.match(line)
         if m:
-            current = {"name": m.group("name").strip(), "meals": []}
-            sections.append(current)
+            close_meal()
+            name = m.group("name").strip()
+            section = None if name.lower() in SKIP_SECTIONS else {"name": name, "meals": []}
+            if section:
+                sections.append(section)
+            mode = None
             continue
-        if current is None:
-            current = {"name": "Nabídka", "meals": []}
-            sections.append(current)
-        found = ALLERGENS.findall(line)
-        allergens = sorted({a.strip() for grp in found for a in re.split(r"[,.]", grp) if a.strip()},
-                           key=lambda x: int(re.sub(r"\D", "", x) or 0))
-        name = ALLERGENS.sub("", line)
-        name = PRICE.sub("", name).strip(" -–,")
-        if not name:
+        if section is None:
             continue
-        if found:
-            status = "milk" if any(re.sub(r"\D", "", a) == MILK_ALLERGEN for a in allergens) else "ok"
-        else:
-            status = "unknown"
-        current["meals"].append({"name": name, "allergens": allergens, "status": status})
+        a = ALLERGEN_LINE.match(line)
+        if a and meal:
+            meal["al"] = a.group("rest")
+            mode = "al"
+            continue
+        m = MEAL_START.match(line)
+        if m:
+            close_meal()
+            meal = {"name": m.group("rest"), "al": None}
+            mode = "name"
+            continue
+        if meal and mode == "al":
+            meal["al"] += " " + line          # zalomený řádek alergenů
+        elif meal:
+            meal["name"] += " " + line        # zalomený název jídla
+    close_meal()
     return [s for s in sections if s["meals"]]
 
 

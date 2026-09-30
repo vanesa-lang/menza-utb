@@ -59,9 +59,9 @@
   section.group{margin:26px 0 0}
   h2{margin:0 0 6px;font-size:14px;font-weight:600;color:var(--orange-red);letter-spacing:.02em}
   ul.meals{list-style:none;margin:0;padding:0}
-  .meal{display:flex;gap:14px;align-items:flex-start;padding:12px 14px;border-bottom:1px solid var(--line);border-left:4px solid transparent}
+  .meal{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-bottom:1px solid var(--line);border-left:4px solid transparent}
   .meal .name{flex:1}
-  .meal .al{flex:none;font-size:14px;color:#6B7680;white-space:nowrap;padding-top:2px}
+  .meal .al{font-size:14px;color:#6B7680}
   .meal.milk{background:var(--milk-bg);border-left-color:var(--milk);color:var(--milk)}
   .meal.milk .name{font-weight:600}
   .meal.milk .al{color:var(--milk)}
@@ -81,7 +81,7 @@
 <div class="wrap">
   <header>
     <h1>Menza UTB <span>a laktóza</span></h1>
-    <p class="lead">Týdenní jídelníček menzy UTB ve Zlíně. Jídla, u kterých menza uvádí alergen 7 (mléko a výrobky z něj, včetně laktózy), jsou označená červeně.</p>
+    <p class="lead">Týdenní jídelníček menzy UTB ve Zlíně. Jídla, u kterých menza v alergenech uvádí mléko (a tedy i laktózu), jsou označená červeně.</p>
     <ul class="legend">
       <li><span class="sw milk"></span>Obsahuje mléko</li>
       <li><span class="sw ok"></span>Mléko neuvedeno</li>
@@ -115,7 +115,7 @@ function renderDay(d){
     <section class="group"><h2>${esc(s.name)}</h2><ul class="meals">
       ${s.meals.map(m => `<li class="meal ${m.status}">
           <span class="name">${esc(m.name)}${m.status==="milk" ? '<span class="badge">mléko</span>' : ""}</span>
-          <span class="al">${m.allergens.length ? "alergeny " + esc(m.allergens.join(", ")) : "alergeny neuvedeny"}</span>
+          <span class="al">${m.allergens.length ? "Alergeny: " + esc(m.allergens.join(", ")) : "Alergeny neuvedeny"}</span>
         </li>`).join("")}
     </ul></section>`).join("");
 }
