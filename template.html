@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menza UTB – jídla s laktózou</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥛</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  /* Paleta KMZ UTB (grafický manuál 2020, kap. 11.5) */
+  :root{
+    --orange:#E37222;      /* PANTONE 1585 – základní */
+    --orange-red:#E65014;  /* PANTONE 7597 – doplňková */
+    --gray-light:#BECDD2;  /* Cool Gray 3 */
+    --gray-dark:#46505A;   /* Cool Gray 11 */
+    --white:#FFFFFF;
+    --milk:#C8102E;        /* výstražná červená – mimo paletu, jen pro označení mléka */
+    --milk-bg:#FCEBEE;
+    --line:#E3EAEC;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--white);color:var(--gray-dark);
+       font-family:"Source Sans 3", Arial, sans-serif;font-size:17px;line-height:1.45}
+  .band{height:28px;background-color:var(--orange);
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M0 28 14 0 28 28Z' fill='%23E65014'/%3E%3Cpath d='M14 0 28 28 28 0Z' fill='%2346505A'/%3E%3Cpath d='M0 0 14 0 0 28Z' fill='%23BECDD2'/%3E%3C/svg%3E");
+        background-size:28px 28px}
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px}
+  header{padding:36px 0 20px}
+  h1{margin:0;font-weight:700;font-size:clamp(30px,6vw,44px);line-height:1.05;color:var(--gray-dark);letter-spacing:-.01em}
+  h1 span{display:block;color:var(--orange)}
+  .lead{margin:14px 0 0;max-width:34em}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 22px;margin:18px 0 0;padding:0;list-style:none;font-size:15px}
+  .legend li{display:flex;align-items:center;gap:8px}
+  .sw{width:14px;height:14px;border-radius:3px;flex:none}
+  .sw.milk{background:var(--milk)}
+  .sw.ok{background:var(--white);border:2px solid var(--gray-light)}
+  .sw.unk{background:repeating-linear-gradient(45deg,var(--gray-light) 0 3px,var(--white) 3px 6px)}
+
+  nav{position:sticky;top:0;z-index:5;background:var(--white);border-bottom:1px solid var(--line)}
+  .tabs{display:flex;gap:4px;overflow-x:auto;padding:10px 0;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:none;font:inherit;font-size:16px;font-weight:600;color:var(--gray-dark);background:none;
+       border:2px solid transparent;border-radius:999px;padding:6px 14px;cursor:pointer}
+  .tab small{font-weight:400}
+  .tab[aria-selected="true"]{background:var(--orange);color:var(--white)}
+  .tab:focus-visible,.toggle input:focus-visible+span{outline:3px solid var(--gray-dark);outline-offset:2px}
+
+  .toolbar{display:flex;justify-content:flex-end;padding:14px 0 0}
+  .toggle{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px}
+  .toggle input{position:absolute;opacity:0}
+  .toggle span{width:40px;height:22px;border-radius:999px;background:var(--gray-light);position:relative;transition:background .15s}
+  .toggle span::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--white);transition:transform .15s}
+  .toggle input:checked+span{background:var(--gray-dark)}
+  .toggle input:checked+span::after{transform:translateX(18px)}
+
+  section.group{margin:26px 0 0}
+  h2{margin:0 0 6px;font-size:14px;font-weight:600;color:var(--orange-red);letter-spacing:.02em}
+  ul.meals{list-style:none;margin:0;padding:0}
+  .meal{display:flex;gap:14px;align-items:flex-start;padding:12px 14px;border-bottom:1px solid var(--line);border-left:4px solid transparent}
+  .meal .name{flex:1}
+  .meal .al{flex:none;font-size:14px;color:#6B7680;white-space:nowrap;padding-top:2px}
+  .meal.milk{background:var(--milk-bg);border-left-color:var(--milk);color:var(--milk)}
+  .meal.milk .name{font-weight:600}
+  .meal.milk .al{color:var(--milk)}
+  .badge{display:inline-block;margin-left:8px;font-size:12px;font-weight:700;line-height:1;padding:4px 7px;border-radius:4px;background:var(--milk);color:var(--white);vertical-align:2px}
+  .meal.unknown{border-left-color:var(--gray-light)}
+  .meal.unknown .al{font-style:italic}
+  body.hide-milk .meal.milk{display:none}
+  .empty{padding:28px 0;color:#6B7680}
+
+  footer{margin:48px 0 0;padding:22px 0 40px;border-top:1px solid var(--line);font-size:14px;color:#6B7680}
+  footer p{margin:0 0 8px;max-width:40em}
+  footer a{color:var(--gray-dark)}
+</style>
+</head>
+<body>
+<div class="band" aria-hidden="true"></div>
+<div class="wrap">
+  <header>
+    <h1>Menza UTB <span>a laktóza</span></h1>
+    <p class="lead">Týdenní jídelníček menzy UTB ve Zlíně. Jídla, u kterých menza uvádí alergen 7 (mléko a výrobky z něj, včetně laktózy), jsou označená červeně.</p>
+    <ul class="legend">
+      <li><span class="sw milk"></span>Obsahuje mléko</li>
+      <li><span class="sw ok"></span>Mléko neuvedeno</li>
+      <li><span class="sw unk"></span>Alergeny chybí, zeptejte se v menze</li>
+    </ul>
+  </header>
+</div>
+<nav><div class="wrap"><div class="tabs" role="tablist" id="tabs"></div></div></nav>
+<main class="wrap">
+  <div class="toolbar">
+    <label class="toggle"><input type="checkbox" id="hide"><span aria-hidden="true"></span>Skrýt jídla s mlékem</label>
+  </div>
+  <div id="day" role="tabpanel"></div>
+</main>
+<div class="wrap">
+  <footer>
+    <p>Neoficiální stránka, není provozována Univerzitou Tomáše Bati ani Kolejemi a menzou UTB. Údaje o alergenech přebírá z <a href="https://jidelnicek.utb.cz/webkredit/Ordering/Menu">oficiálního jídelníčku</a>; při nejistotě se vždy zeptejte přímo v menze.</p>
+    <p id="updated"></p>
+  </footer>
+</div>
+<script>
+const DATA = /*__DATA__*/null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function renderDay(d){
+  const el = $("#day");
+  if (d.error) { el.innerHTML = `<p class="empty">Jídelníček na tento den se nepodařilo načíst. Zkuste to později nebo otevřete oficiální jídelníček.</p>`; return; }
+  if (!d.sections.length) { el.innerHTML = `<p class="empty">Na tento den menza zatím nic nezveřejnila.</p>`; return; }
+  el.innerHTML = d.sections.map(s => `
+    <section class="group"><h2>${esc(s.name)}</h2><ul class="meals">
+      ${s.meals.map(m => `<li class="meal ${m.status}">
+          <span class="name">${esc(m.name)}${m.status==="milk" ? '<span class="badge">mléko</span>' : ""}</span>
+          <span class="al">${m.allergens.length ? "alergeny " + esc(m.allergens.join(", ")) : "alergeny neuvedeny"}</span>
+        </li>`).join("")}
+    </ul></section>`).join("");
+}
+
+function init(){
+  if (!DATA) { $("#day").innerHTML = '<p class="empty">Data zatím nejsou k dispozici.</p>'; return; }
+  const tabs = $("#tabs");
+  let start = DATA.days.findIndex(d => d.date === DATA.today);
+  if (start < 0) start = 0;
+  DATA.days.forEach((d, i) => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.role = "tab"; b.type = "button";
+    const [name, rest] = [d.label.split(" ")[0], d.label.split(" ").slice(1).join(" ")];
+    b.innerHTML = `${esc(name)} <small>${esc(rest)}</small>`;
+    b.onclick = () => select(i);
+    tabs.appendChild(b);
+  });
+  function select(i){
+    [...tabs.children].forEach((b, j) => b.setAttribute("aria-selected", i === j));
+    renderDay(DATA.days[i]);
+  }
+  select(start);
+  $("#updated").textContent = "Aktualizováno " + DATA.updated + ".";
+  $("#hide").onchange = e => document.body.classList.toggle("hide-milk", e.target.checked);
+}
+init();
+</script>
+</body>
+</html>
